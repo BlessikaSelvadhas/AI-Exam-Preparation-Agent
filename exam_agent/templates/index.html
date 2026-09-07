@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Exam Preparation Agent</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5ff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 600px;
+            max-width: 90%;
+            margin: 60px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #4f46e5;
+            color: white;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #3730a3;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            border-left: 5px solid #4f46e5;
+        }
+
+        .result h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .result p {
+            text-align: left;
+            color: #444;
+            line-height: 1.7;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🎓 AI Exam Preparation Agent</h1>
+
+        <p class="subtitle">
+            Your Personal AI Study Assistant
+        </p>
+        <h2>📄 Upload Study Material</h2>
+
+<form method="POST" enctype="multipart/form-data">
+
+    {% csrf_token %}
+
+    <input
+        type="file"
+        name="pdf_file"
+        accept=".pdf"
+        required
+    >
+
+    <button type="submit" name="action" value="pdf_upload">
+        📄 Upload PDF
+    </button>
+
+</form>
+<h2>🤖 Ask From PDF</h2>
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    <label>Your Question</label>
+
+    <input
+        type="text"
+        name="pdf_question"
+        placeholder="Example: What is K-Means Clustering?"
+        required
+    >
+
+    <button type="submit" name="action" value="ask_pdf">
+        🔍 Ask from PDF
+    </button>
+
+</form>
+        <!-- ONE FORM ONLY -->
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <label for="subject">Subject</label>
+
+            <input
+                type="text"
+                id="subject"
+                name="subject"
+                placeholder="Example: Machine Learning"
+                required
+            >
+
+            <label for="topic">Topic</label>
+
+            <input
+                type="text"
+                id="topic"
+                name="topic"
+                placeholder="Example: K-Means Clustering"
+                required
+            >
+
+            <div class="buttons">
+
+                <button type="submit" name="action" value="explain">
+                    📖 Explain Topic
+                </button>
+
+                <button type="submit" name="action" value="questions">
+                    📝 Important Questions
+                </button>
+
+                <button type="submit" name="action" value="mcq">
+                    ❓ Generate MCQ
+                </button>
+
+                <button type="submit" name="action" value="studyplan">
+                    📅 Study Plan
+                </button>
+
+            </div>
+
+        </form>
+
+        <!-- AI RESULT -->
+        {% if result %}
+
+        <div class="result">
+
+            <h2>🤖 AI Result</h2>
+
+            <p>{{ result }}</p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+</html>
