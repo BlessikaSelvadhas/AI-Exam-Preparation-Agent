@@ -1,6 +1,30 @@
 from django.shortcuts import render
-import ollama
+import os
+from groq import Groq
 from pypdf import PdfReader
+
+
+# Create Groq client using environment variable
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY")
+)
+
+
+def ask_groq(prompt):
+    """Send a prompt to Groq and return the AI response."""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content
 
 
 def home(request):
@@ -14,7 +38,10 @@ def home(request):
 
         action = request.POST.get("action")
 
-        # ---------------- PDF UPLOAD ----------------
+        # ==================================================
+        # PDF UPLOAD
+        # ==================================================
+
         if action == "pdf_upload":
 
             uploaded_file = request.FILES.get("pdf_file")
@@ -24,11 +51,13 @@ def home(request):
                 if uploaded_file.name.lower().endswith(".pdf"):
 
                     try:
+
                         reader = PdfReader(uploaded_file)
 
                         pages = []
 
                         for page in reader.pages:
+
                             text = page.extract_text()
 
                             if text:
@@ -48,29 +77,42 @@ def home(request):
 
                         else:
 
-                            result = "⚠️ Could not extract text from this PDF."
+                            result = (
+                                "⚠️ Could not extract text from this PDF."
+                            )
 
                     except Exception as e:
 
-                        result = f"❌ Error reading PDF: {str(e)}"
+                        result = (
+                            f"❌ Error reading PDF: {str(e)}"
+                        )
 
                 else:
 
-                    result = "⚠️ Please upload a PDF file."
+                    result = (
+                        "⚠️ Please upload a PDF file."
+                    )
 
             else:
 
-                result = "⚠️ Please select a PDF file."
+                result = (
+                    "⚠️ Please select a PDF file."
+                )
 
-        # ---------------- ASK FROM PDF ----------------
+        # ==================================================
+        # ASK QUESTION FROM PDF
+        # ==================================================
+
         elif action == "ask_pdf":
 
             question = request.POST.get(
-                "pdf_question", ""
+                "pdf_question",
+                ""
             ).strip()
 
             pdf_text = request.session.get(
-                "pdf_text", ""
+                "pdf_text",
+                ""
             )
 
             if not pdf_text:
@@ -87,7 +129,7 @@ def home(request):
 
             else:
 
-                # Limit text to avoid sending too much data
+                # Limit PDF text to avoid very large requests
                 context = pdf_text[:12000]
 
                 prompt = f"""
@@ -105,36 +147,44 @@ STUDENT QUESTION:
 Instructions:
 - Give a clear and simple answer.
 - Use information from the study material.
+- Do not use outside information.
 - If the answer is not available in the study material,
-  say: "The answer is not available in the uploaded PDF."
+  say exactly:
+
+"The answer is not available in the uploaded PDF."
 """
 
-                response = ollama.chat(
-                    model="qwen2.5:1.5b",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                )
+                try:
 
-                result = response[
-                    "message"
-                ]["content"]
+                    result = ask_groq(prompt)
 
-        # ---------------- NORMAL AI FEATURES ----------------
+                except Exception as e:
+
+                    result = (
+                        f"❌ AI Error: {str(e)}"
+                    )
+
+        # ==================================================
+        # NORMAL AI FEATURES
+        # ==================================================
+
         else:
 
             subject = request.POST.get(
-                "subject", ""
+                "subject",
+                ""
             ).strip()
 
             topic = request.POST.get(
-                "topic", ""
+                "topic",
+                ""
             ).strip()
 
             if subject and topic:
+
+                # ------------------------------------------
+                # EXPLAIN
+                # ------------------------------------------
 
                 if action == "explain":
 
@@ -147,12 +197,17 @@ Topic: {topic}
 Explain this topic in simple language for a college student.
 
 Include:
+
 1. Definition
 2. Main concepts
 3. Simple example
 4. Important exam points
 5. Short summary
 """
+
+                # ------------------------------------------
+                # IMPORTANT QUESTIONS
+                # ------------------------------------------
 
                 elif action == "questions":
 
@@ -172,6 +227,10 @@ Include:
 Do not give answers.
 """
 
+                # ------------------------------------------
+                # MCQ
+                # ------------------------------------------
+
                 elif action == "mcq":
 
                     prompt = f"""
@@ -183,13 +242,20 @@ Topic: {topic}
 Generate 5 multiple-choice questions.
 
 For each question provide:
+
 A) Option
 B) Option
 C) Option
 D) Option
 
-Clearly show the correct answer and a short explanation.
+Clearly show:
+- Correct answer
+- Short explanation
 """
+
+                # ------------------------------------------
+                # STUDY PLAN
+                # ------------------------------------------
 
                 elif action == "studyplan":
 
@@ -202,6 +268,7 @@ Topic: {topic}
 Create a simple 7-day study plan.
 
 For each day include:
+
 - Topics to study
 - Revision
 - Practice activity
@@ -209,23 +276,29 @@ For each day include:
 At the end give one exam preparation tip.
 """
 
+                # ------------------------------------------
+                # INVALID ACTION
+                # ------------------------------------------
+
                 else:
 
-                    prompt = "Please select a valid option."
+                    prompt = (
+                        "Please select a valid option."
+                    )
 
-                response = ollama.chat(
-                    model="qwen2.5:1.5b",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                )
+                # ------------------------------------------
+                # CALL GROQ
+                # ------------------------------------------
 
-                result = response[
-                    "message"
-                ]["content"]
+                try:
+
+                    result = ask_groq(prompt)
+
+                except Exception as e:
+
+                    result = (
+                        f"❌ AI Error: {str(e)}"
+                    )
 
             else:
 
